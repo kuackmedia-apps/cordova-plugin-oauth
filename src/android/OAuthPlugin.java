@@ -44,6 +44,13 @@ public class OAuthPlugin extends CordovaPlugin {
     private boolean didFinishLoading = false;
     private String lastOAuthResult = null;
 
+    // kuackmedia: last callback URI already dispatched to the WebView. onStart()
+    // re-feeds the activity's launch intent on every return to the foreground,
+    // so an app cold-started by the OAuth callback would otherwise dispatch the
+    // same (already used) result again and again. Static so it also survives an
+    // activity re-creation within the same process.
+    private static String lastDispatchedUri = null;
+
     /**
      * Executes the request.
      *
@@ -96,14 +103,30 @@ public class OAuthPlugin extends CordovaPlugin {
      */
     @Override
     public void onNewIntent(Intent intent) {
-        if (intent == null || !intent.getAction().equals(Intent.ACTION_VIEW)) {
+        // kuackmedia: null-safe. onStart() calls this with the launch intent on
+        // every return to the foreground; an intent without action, a VIEW intent
+        // without data or a URI without host used to throw NullPointerException.
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) {
             return;
         }
 
         final Uri uri = intent.getData();
+        if (uri == null) {
+            return;
+        }
+
+        String callbackScheme = preferences.getString("oauthscheme", null);
         String callbackHost = preferences.getString("oauthhostname", "oauth_callback");
 
-        if (uri.getHost().equals(callbackHost)) {
+        // kuackmedia: match scheme and host (upstream only checked the host).
+        boolean schemeMatches = callbackScheme == null || callbackScheme.equalsIgnoreCase(uri.getScheme());
+        if (schemeMatches && callbackHost.equalsIgnoreCase(uri.getHost())) {
+            String uriString = uri.toString();
+            if (uriString.equals(lastDispatchedUri)) {
+                return;
+            }
+            lastDispatchedUri = uriString;
+
             LOG.i(TAG, "OAuth called back with parameters.");
 
             try {
