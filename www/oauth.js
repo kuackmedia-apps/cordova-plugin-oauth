@@ -103,6 +103,25 @@ var EventTargetPolyfill = (function(Object, wm) {
 })(Object, new WeakMap());
 
 
+// kuackmedia: `features` de window.open ("ephemeral=yes,otra=no") a un objeto de booleanos. Una clave
+// sin valor vale true, como en window.open.
+function parseFeatures(features) {
+  var opts = {};
+  if (!features || typeof features !== 'string') {
+    return opts;
+  }
+  features.split(',').forEach(function(pair) {
+    var kv = pair.split('=');
+    var key = kv[0].trim().toLowerCase();
+    var value = (kv.length > 1 ? kv[1] : 'yes').trim().toLowerCase();
+    if (key) {
+      opts[key] = value !== 'no' && value !== 'false' && value !== '0';
+    }
+  });
+  return opts;
+}
+
+
 module.exports = function(url, name, features) {
   var nameMatch = name && name.match && name.match(/^oauth:/);
   var featureMatch = features && features.match && features.match(/^(?:.+,)?(oauth)(?:[=,].*)?$/i);
@@ -124,7 +143,11 @@ module.exports = function(url, name, features) {
       }
     }
 
-    cordova.exec(success, noop, 'OAuth', 'startOAuth', [url]);
+    // kuackmedia: 2º argumento con las opciones de la sesión. `ephemeral` = sesión privada en iOS
+    // (prefersEphemeralWebBrowserSession: sin el aviso "quiere usar … para iniciar sesión", sin cookies
+    // compartidas con Safari). Android lo ignora.
+    var opts = parseFeatures(features);
+    cordova.exec(success, noop, 'OAuth', 'startOAuth', [url, { ephemeral: !!opts.ephemeral }]);
 
     return wnd;
   } else {

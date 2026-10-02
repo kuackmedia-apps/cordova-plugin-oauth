@@ -79,6 +79,16 @@ Usage
     window.open(endpoint, '_self', 'oauth=yes');
     ```
 
+    **kuackmedia fork:** add `ephemeral=yes` to the features string to open a
+    private session on iOS 13+ (`prefersEphemeralWebBrowserSession`). iOS then
+    skips its "“App” Wants to Use “domain” to Sign In" prompt, but the session
+    shares no cookies with Safari, so the user signs in every time. Android
+    ignores the option. See [KUACKMEDIA.md](KUACKMEDIA.md).
+
+    ```javascript
+    window.open(endpoint, 'oauth:google', 'ephemeral=yes');
+    ```
+
 2.  The plugin will open the OAuth login page in a new browser window.
 
 3.  When the OAuth process is complete and it redirects to your app scheme, the

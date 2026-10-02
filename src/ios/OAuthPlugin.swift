@@ -39,6 +39,10 @@ class ASWebAuthenticationSessionOAuthSessionProvider : OAuthSessionProvider {
 
     var delegate : AnyObject?
 
+    // kuackmedia: sesión privada (iOS 13+). Sin cookies compartidas con Safari, así que iOS no muestra
+    // el aviso "quiere usar … para iniciar sesión"; el usuario se identifica en cada login.
+    var prefersEphemeral : Bool = false
+
     required init(_ endpoint : URL, callbackScheme : String) {
         let url: URL = URL(string: callbackScheme)!
         let callbackURLScheme: String = url.scheme ?? callbackScheme
@@ -56,6 +60,8 @@ class ASWebAuthenticationSessionOAuthSessionProvider : OAuthSessionProvider {
             if let provider = self.delegate as? ASWebAuthenticationPresentationContextProviding {
                 self.aswas.presentationContextProvider = provider
             }
+            // kuackmedia: se fija antes de start(); después no tiene efecto.
+            self.aswas.prefersEphemeralWebBrowserSession = self.prefersEphemeral
         }
 
         self.aswas.start()
@@ -174,6 +180,11 @@ class OAuthPlugin : CDVPlugin, SFSafariViewControllerDelegate, ASWebAuthenticati
             return
         }
 
+        // kuackmedia: opciones de la sesión (2º argumento, desde los `features` de window.open). Sin el
+        // argumento (JS de upstream) o con otro tipo, la sesión es la compartida de siempre.
+        let options = command.argument(at: 1) as? [String : Any]
+        let ephemeral = options?["ephemeral"] as? Bool ?? false
+
         self.closeCallbackId = command.callbackId
 
         if OAuthPlugin.forcedVersion >= 12, #available(iOS 12.0, *) {
@@ -182,6 +193,7 @@ class OAuthPlugin : CDVPlugin, SFSafariViewControllerDelegate, ASWebAuthenticati
             if #available(iOS 13.0, *) {
                 if let aswas = self.authSystem as? ASWebAuthenticationSessionOAuthSessionProvider {
                     aswas.delegate = self
+                    aswas.prefersEphemeral = ephemeral
                 }
             }
         } else if OAuthPlugin.forcedVersion >= 11, #available(iOS 11.0, *) {
