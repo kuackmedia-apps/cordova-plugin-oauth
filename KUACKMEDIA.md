@@ -5,9 +5,12 @@ Fork de [AyogoHealth/cordova-plugin-oauth](https://github.com/AyogoHealth/cordov
 abre la autorización de TuID en `ASWebAuthenticationSession` (iOS) o Custom Tabs (Android) y recibe el retorno
 `antelmusic://oauth2redirect` como evento `message` (`oauth::{…}`).
 
-Versión: `4.1.0-kuack.1`. Se instala desde `github:kuackmedia-apps/cordova-plugin-oauth#v4.1.0-kuack.1` con las
-variables `URL_SCHEME` y `URL_HOSTNAME` (en las apps, la clave `oauthPlugin` del Gruntfile genera el bloque del
-`config.xml`).
+Versión: `4.1.0-kuack.1`. **`main` es lo publicado**: las apps lo instalan desde
+`github:kuackmedia-apps/cordova-plugin-oauth` (sin versión, como los demás forks de kuackmedia-apps), declarado en los
+`config-app*.xml` de `_common/configTemplates` con `URL_SCHEME` = `shareSchema` y `URL_HOSTNAME` = `oauthCallbackHost`
+del Gruntfile de cada app. Un push a `main` llega al próximo `initApp.sh` de **todas** las apps: los cambios se prueban
+antes en una branch (en el app, con `config-app-local.xml`, que apunta al checkout local del plugin). El tag
+`v4.1.0-kuack.1` marca la primera versión del fork.
 
 ## Cambios respecto de upstream
 
@@ -25,5 +28,5 @@ Todos en Android; iOS queda igual. Las líneas cambiadas llevan el comentario `k
 
 ## Para actualizar desde upstream
 
-`git fetch upstream --tags`, rebase de la branch `kuack` sobre el tag nuevo, revisar que los cuatro puntos sigan
-aplicando y taggear `vX.Y.Z-kuack.N`.
+`git fetch upstream --tags`, en una branch merge (o rebase) del tag nuevo, revisar que los cuatro puntos sigan
+aplicando, probarlo en un app con `config-app-local.xml`, llevarlo a `main` y taggear `vX.Y.Z-kuack.N`.
